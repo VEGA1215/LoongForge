@@ -54,6 +54,7 @@ export PYTORCH_CUDA_ALLOC_CONF=${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:Tr
 export LINGBOT_BALANCED_SAMPLER=${LINGBOT_BALANCED_SAMPLER:-1}           # Balance variable-shape samples across ranks.
 export LINGBOT_FSDP_RESHARD=${LINGBOT_FSDP_RESHARD:-0}                   # 1 restores the framework-default FSDP reshard.
 export LINGBOT_FSDP_BF16_REDUCE=${LINGBOT_FSDP_BF16_REDUCE:-1}           # 0 reduces gradients in FP32 instead of BF16.
+export LINGBOT_VA_FIXED_MICROBATCH_RNG=${LINGBOT_VA_FIXED_MICROBATCH_RNG:-1}  # 0 lets each rank draw its own timesteps/noise.
 # Export the per-rank sample loading order for reproducibility checks.
 export LINGBOT_SAMPLE_ORDER_EXPORT_DIR=${LINGBOT_SAMPLE_ORDER_EXPORT_DIR:-}
 

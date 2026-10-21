@@ -58,7 +58,7 @@ bash examples/embodied/lingbot_va/run_lingbot_va_libero_fsdp_finetune.sh
 |FSDP2 嵌套包装与 post-step reshard|按 block + root 顺序嵌套 `fully_shard`，并在 optimizer step 之后再 reshard（`LINGBOT_FSDP_RESHARD=0` 时生效）。|去掉前反向之间的重复 all-gather，减少通信量。|
 |编译版 device-side loss guard|NaN/inf 与 loss 缩放检查用 `fullgraph` 编译的 device 端算子完成。|避免每个 micro-batch 因检查而产生 device→host 同步。|
 
-> 注：若开启框架的 `--manual-gc`，LingBot 会保留新生代回收并抑制 gen2 回收（阈值 `GC_GENERATION2_THRESHOLD`），消除周期性 GC 抖动；该行为随框架开关生效，示例脚本默认不开启。
+> 注：若开启框架的 `--manual-gc`，LingBot 会保留新生代回收并抑制 gen2 回收（阈值 `GC_GENERATION2_THRESHOLD`），消除周期性 GC 抖动；该行为随框架开关生效：RoboTwin 示例脚本默认开启，LIBERO 示例脚本不开启。
 
 ### 2.2 可选项
 以下性能优化可由用户控制，示例脚本已按推荐值导出：
@@ -67,17 +67,18 @@ bash examples/embodied/lingbot_va/run_lingbot_va_libero_fsdp_finetune.sh
 |-|-|-|
 |`LINGBOT_BALANCED_SAMPLER`|`1`|按样本计算量在 DP ranks 间做确定性负载均衡，并对齐每个 rank 的 microbatch 代价，降低慢 rank 等待；同时会改变样本加载顺序，如需与官方社区逐 step 对齐 loss 请关闭（关闭后回退到公开 `DistributedSampler` 的切分方式）。|
 |`LINGBOT_FSDP_RESHARD`|`0`|`0` 表示前反向之间保持参数不 reshard（已验收配置）；置 `1` 恢复框架默认的 reshard 行为。|
-|`LINGBOT_FSDP_BF16_REDUCE`|`1`|`1` 用参数 dtype（BF16）做梯度 reduce，省掉每步一次 FP32 reduce-scatter；`0` 用 FP32 reduce。该开关会覆盖 `--fsdp-reduce-dtype`，属于数值选择而不只是速度选项。|
+|`LINGBOT_FSDP_BF16_REDUCE`|RoboTwin `0` / LIBERO `1`|`1` 用参数 dtype（BF16）做梯度 reduce，省掉每步一次 FP32 reduce-scatter；`0` 用 FP32 reduce。该开关会覆盖 `--fsdp-reduce-dtype`，属于数值选择而不只是速度选项：RoboTwin 上 BF16 reduce 会使 action loss 升高约 6%、成功率下降，因此 RoboTwin 脚本默认用 FP32 reduce。|
+|`LINGBOT_VA_FIXED_MICROBATCH_RNG`|RoboTwin `0` / LIBERO `1`|`1` 在每个 microbatch 前重设种子，使 timestep、噪声、chunk 与 window 只取决于步号，且所有 rank 共用同一组随机数（用于与打过补丁的社区训练逐 step 对比）；`0` 与社区训练一样使用进程全局随机流，配合 `--set-seed-by-rank` 时每个 rank 各自采样。会改变训练数值。|
 
 例如关闭可选优化：
 
-以下命令以 RoboTwin 为例；LIBERO 使用 `run_lingbot_va_libero_fsdp_finetune.sh`。
+以下命令以 LIBERO 为例；RoboTwin 脚本中 `LINGBOT_FSDP_BF16_REDUCE` 默认已是 `0`。
 
 ```bash
 LINGBOT_BALANCED_SAMPLER=0 \
 LINGBOT_FSDP_RESHARD=1 \
 LINGBOT_FSDP_BF16_REDUCE=0 \
-bash examples/embodied/lingbot_va/run_lingbot_va_robotwin_fsdp_finetune.sh
+bash examples/embodied/lingbot_va/run_lingbot_va_libero_fsdp_finetune.sh
 ```
 
 ### 2.3 功能性开关
