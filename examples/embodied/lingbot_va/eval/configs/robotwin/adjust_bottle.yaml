@@ -3,6 +3,9 @@
 
 # LingBot-VA RoboTwin-2.0 task-success template (open-source).
 # Verified task: adjust_bottle / demo_clean with a LingBot-VA robotwin posttrain.
+# One-episode smoke test. For the released-number protocol (all 50 tasks,
+# seen instructions, seed 10000, official per-task step limits) use
+# robotwin_50tasks.yaml.
 #
 # ckpt_path is a single checkpoint root holding transformer/ plus the frozen
 # vae/ text_encoder/ tokenizer/ subfolders; the action quantiles live in
