@@ -58,7 +58,7 @@ The following optimizations are baked into the LingBot implementation and have n
 | Nested FSDP2 wrapping with post-step reshard | Apply nested `fully_shard` in block + root order and reshard after the optimizer step (active when `LINGBOT_FSDP_RESHARD=0`). | Remove the redundant all-gather between forward and backward, reducing communication volume. |
 | Compiled device-side loss guard | NaN/inf and loss-scaling checks run in a `fullgraph`-compiled device-side operator. | Avoid a device-to-host synchronization per micro-batch just to run the checks. |
 
-> Note: with the framework's `--manual-gc` enabled, LingBot keeps young-generation collection and suppresses generation 2 (threshold `GC_GENERATION2_THRESHOLD`) to remove periodic GC jitter. This follows the framework switch: the RoboTwin example script enables it, the LIBERO one does not.
+> Note: with the framework's `--manual-gc` enabled, LingBot keeps young-generation collection and suppresses generation 2 (threshold `GC_GENERATION2_THRESHOLD`) to remove periodic GC jitter. This follows the framework switch, which both example scripts enable.
 
 ### 2.2 Optional Optimizations
 The following performance optimizations are user-controllable and are exported at their recommended values in the example scripts:
@@ -67,18 +67,17 @@ The following performance optimizations are user-controllable and are exported a
 |-|-|-|
 | `LINGBOT_BALANCED_SAMPLER` | `1` | Deterministically balance load across DP ranks by per-sample compute cost and align each rank's microbatch costs, reducing slow-rank stragglers; it also changes the sample loading order, so disable it if you need step-by-step loss alignment with the official community (disabling falls back to the public `DistributedSampler` partitioning). |
 | `LINGBOT_FSDP_RESHARD` | `0` | `0` keeps parameters unsharded between forward and backward (the accepted configuration); `1` restores the framework-default reshard behavior. |
-| `LINGBOT_FSDP_BF16_REDUCE` | RoboTwin `0` / LIBERO `1` | `1` reduces gradients in the parameter dtype (BF16), removing one FP32 reduce-scatter per step; `0` reduces in FP32. This switch overrides `--fsdp-reduce-dtype` and is a numerics choice, not only a speed one: on RoboTwin, BF16 reduction raises the action loss by about 6% and lowers the success rate, so the RoboTwin script reduces in FP32. |
-| `LINGBOT_VA_FIXED_MICROBATCH_RNG` | RoboTwin `0` / LIBERO `1` | `1` reseeds before every microbatch so timesteps, noise, chunk and window sizes depend only on the step index and every rank shares one draw (for step-by-step comparison with a patched community trainer); `0` draws from the process-global streams like the community trainer, and together with `--set-seed-by-rank` each rank gets its own draw. Changes training numerics. |
+| `LINGBOT_FSDP_BF16_REDUCE` | `0` | `1` reduces gradients in the parameter dtype (BF16), removing one FP32 reduce-scatter per step; `0` reduces in FP32. This switch overrides `--fsdp-reduce-dtype` and is a numerics choice, not only a speed one: on RoboTwin, BF16 reduction raises the action loss by about 6% and lowers the success rate, so the example scripts reduce in FP32. |
+| `LINGBOT_VA_FIXED_MICROBATCH_RNG` | `0` | `1` reseeds before every microbatch so timesteps, noise, chunk and window sizes depend only on the step index and every rank shares one draw (for step-by-step comparison with a patched community trainer); `0` draws from the process-global streams like the community trainer, and together with `--set-seed-by-rank` each rank gets its own draw. Changes training numerics. |
 
 For example, to disable the optional optimizations:
 
-The command below uses LIBERO as an example; on RoboTwin, `LINGBOT_FSDP_BF16_REDUCE` is already `0` by default.
+The command below uses RoboTwin as an example; for LIBERO, use `run_lingbot_va_libero_fsdp_finetune.sh`.
 
 ```bash
 LINGBOT_BALANCED_SAMPLER=0 \
 LINGBOT_FSDP_RESHARD=1 \
-LINGBOT_FSDP_BF16_REDUCE=0 \
-bash examples/embodied/lingbot_va/run_lingbot_va_libero_fsdp_finetune.sh
+bash examples/embodied/lingbot_va/run_lingbot_va_robotwin_fsdp_finetune.sh
 ```
 
 ### 2.3 Functional Switches
