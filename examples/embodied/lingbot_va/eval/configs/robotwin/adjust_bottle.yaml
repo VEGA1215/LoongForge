@@ -26,6 +26,8 @@ benchmark:
   max_steps: 300
   disable_expert_check: false
   action_bridge: lingbot_va_ee_quat_16d
+  # The community LingBot-VA RoboTwin client evaluates with seen instructions.
+  instruction_type: seen
 
 model:
   backend: loongforge
