@@ -205,7 +205,7 @@ class _ModelRoutingArgs:
     model_name: Optional[str] = field(
         default=None,
         metadata={
-            "help": "Model identifier (e.g. 'pi05', 'groot_n1_6'). Selects the "
+            "help": "Model identifier (e.g. 'pi05', 'gr00t_n1_6'). Selects the "
                     "ModelConfig/DataConfig classes and default YAML via "
                     "MODEL_SCHEMA. Required."
         },
@@ -906,6 +906,14 @@ class _CheckpointArgs:
         metadata={
             "help": "Save checkpoints asynchronously in the background (dcp "
                     "format only)."
+        },
+    )
+    save_processor_config: bool = field(
+        default=False,
+        metadata={
+            "help": "Write processor_config.json (the training data config) into "
+                    "every steps_N dir for the eval loader. Required by GR00T-N1.7 "
+                    "eval; enable for models whose eval loader reads it."
         },
     )
 
